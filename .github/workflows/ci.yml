@@ -3,8 +3,7 @@ name: CI
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build-test:
@@ -39,16 +38,18 @@ jobs:
           node-version: "20"
           cache: "pnpm"
 
-      - name: Install (web) + Go deps
+      - name: Install dependencies
         run: |
-          pnpm install
-          cd apps/api && go mod download
+          pnpm install --frozen-lockfile
+          cd apps/api
+          go mod download
 
       - name: Test (api)
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/traceforge?sslmode=disable
           WRITE_API_KEY: dev-write-key
           PUBLIC_READ_API_KEY: dev-public-read-key
+          PUBLIC_WORKSPACE_ID: public
         run: |
           cd apps/api
           go test ./...
@@ -62,7 +63,8 @@ jobs:
         env:
           API_BASE_URL: http://localhost:8080
           PUBLIC_READ_API_KEY: dev-public-read-key
+          PUBLIC_WORKSPACE_ID: public
           GITHUB_REPO_URL: https://github.com/naf1s66/traceforge
         run: |
-          pnpm -C apps/web lint || true
+          pnpm -C apps/web lint
           pnpm -C apps/web build
