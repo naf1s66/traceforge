@@ -47,7 +47,12 @@ func HandleCreateEvent(store *EventStore) http.HandlerFunc {
 			writeJSONError(w, http.StatusUnauthorized, "missing_api_key", "X-API-Key is required")
 			return
 		}
-		if apiKey != writeAPIKey() {
+		expectedKey, err := writeAPIKey()
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, "write_api_key_unset", err.Error())
+			return
+		}
+		if apiKey != expectedKey {
 			writeJSONError(w, http.StatusForbidden, "invalid_api_key", "X-API-Key is invalid")
 			return
 		}
@@ -161,11 +166,11 @@ func (e *requestFieldError) Error() string {
 	return "missing required field: " + e.Field
 }
 
-func writeAPIKey() string {
+func writeAPIKey() (string, error) {
 	if key := strings.TrimSpace(os.Getenv("WRITE_API_KEY")); key != "" {
-		return key
+		return key, nil
 	}
-	return "dev-write-key"
+	return "", fmt.Errorf("WRITE_API_KEY is not configured")
 }
 
 func newUUID() (string, error) {
