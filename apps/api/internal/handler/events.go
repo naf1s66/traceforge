@@ -26,11 +26,13 @@ type eventCreateRequest struct {
 type EventStore struct {
 	mu     sync.Mutex
 	events map[string][]model.Event
+	idem   map[string]model.Event
 }
 
 func NewEventStore() *EventStore {
 	return &EventStore{
 		events: make(map[string][]model.Event),
+		idem:   make(map[string]model.Event),
 	}
 }
 
@@ -40,11 +42,30 @@ func (s *EventStore) add(event model.Event) {
 	s.events[event.WorkspaceID] = append(s.events[event.WorkspaceID], event)
 }
 
+func (s *EventStore) getByIdempotency(workspaceID, key string) (model.Event, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	event, ok := s.idem[idempotencyKey(workspaceID, key)]
+	return event, ok
+}
+
+func (s *EventStore) addWithIdempotency(workspaceID, key string, event model.Event) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.events[event.WorkspaceID] = append(s.events[event.WorkspaceID], event)
+	s.idem[idempotencyKey(workspaceID, key)] = event
+}
+
 func HandleCreateEvent(store *EventStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		apiKey := strings.TrimSpace(r.Header.Get("X-API-Key"))
 		if apiKey == "" {
 			writeJSONError(w, http.StatusUnauthorized, "missing_api_key", "X-API-Key is required")
+			return
+		}
+		idempotencyKey := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+		if idempotencyKey == "" {
+			writeJSONError(w, http.StatusBadRequest, "missing_idempotency_key", "Idempotency-Key is required")
 			return
 		}
 		expectedKey, err := writeAPIKey()
@@ -76,6 +97,12 @@ func HandleCreateEvent(store *EventStore) http.HandlerFunc {
 			return
 		}
 
+		workspaceID := strings.TrimSpace(req.WorkspaceID)
+		if existing, ok := store.getByIdempotency(workspaceID, idempotencyKey); ok {
+			writeJSON(w, http.StatusOK, existing)
+			return
+		}
+
 		metadata := req.Metadata
 		if metadata == nil {
 			metadata = map[string]any{}
@@ -89,7 +116,7 @@ func HandleCreateEvent(store *EventStore) http.HandlerFunc {
 
 		event := model.Event{
 			ID:          eventID,
-			WorkspaceID: strings.TrimSpace(req.WorkspaceID),
+			WorkspaceID: workspaceID,
 			Service:     strings.TrimSpace(req.Service),
 			Actor:       strings.TrimSpace(req.Actor),
 			Action:      strings.TrimSpace(req.Action),
@@ -98,7 +125,7 @@ func HandleCreateEvent(store *EventStore) http.HandlerFunc {
 			CreatedAt:   time.Now().UTC(),
 		}
 
-		store.add(event)
+		store.addWithIdempotency(workspaceID, idempotencyKey, event)
 
 		writeJSON(w, http.StatusCreated, event)
 	}
@@ -181,4 +208,8 @@ func newUUID() (string, error) {
 	b[6] = (b[6] & 0x0f) | 0x40
 	b[8] = (b[8] & 0x3f) | 0x80
 	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16]), nil
+}
+
+func idempotencyKey(workspaceID, key string) string {
+	return workspaceID + ":" + key
 }
