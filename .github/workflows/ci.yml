@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: traceforge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install (web) + Go deps
+        run: |
+          pnpm install
+          cd apps/api && go mod download
+
+      - name: Test (api)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/traceforge?sslmode=disable
+          WRITE_API_KEY: dev-write-key
+          PUBLIC_READ_API_KEY: dev-public-read-key
+        run: |
+          cd apps/api
+          go test ./...
+
+      - name: Build (api)
+        run: |
+          cd apps/api
+          go build ./cmd/server
+
+      - name: Lint/Build (web)
+        env:
+          API_BASE_URL: http://localhost:8080
+          PUBLIC_READ_API_KEY: dev-public-read-key
+          GITHUB_REPO_URL: https://github.com/naf1s66/traceforge
+        run: |
+          pnpm -C apps/web lint || true
+          pnpm -C apps/web build

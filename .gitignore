@@ -1,0 +1,31 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Node / Remix
+node_modules/
+.pnpm-store/
+dist/
+build/
+.cache/
+.env
+.env.*
+!.env.example
+
+# Go
+bin/
+*.exe
+*.test
+*.out
+
+# Docker
+*.log
+docker-data/
+infra/db_data/
+
+# Editor
+.vscode/
+.idea/
+
+# Test artifacts
+coverage/

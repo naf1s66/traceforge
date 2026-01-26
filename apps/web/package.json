@@ -1,0 +1,30 @@
+{
+  "name": "@traceforge/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "remix dev --manual",
+    "build": "remix build",
+    "start": "remix-serve build/server/index.js",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx || true",
+    "test": "echo \"(optional) add tests later\""
+  },
+  "dependencies": {
+    "@remix-run/node": "^2.14.0",
+    "@remix-run/react": "^2.14.0",
+    "@remix-run/serve": "^2.14.0",
+    "isbot": "^4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@remix-run/dev": "^2.14.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.4.5",
+    "tailwindcss": "^3.4.13",
+    "postcss": "^8.4.47",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1"
+  }
+}

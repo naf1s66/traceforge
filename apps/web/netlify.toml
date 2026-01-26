@@ -1,0 +1,8 @@
+[build]
+  command = "pnpm install && pnpm -C apps/web build"
+  publish = "apps/web/public"
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/server"
+  status = 200

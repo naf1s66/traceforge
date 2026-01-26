@@ -1,0 +1,23 @@
+### Health
+GET http://localhost:8080/api/traceforge/v1/health
+
+# Milestone 2+ examples (once implemented):
+#
+# ### Create event (write)
+# POST http://localhost:8080/api/traceforge/v1/events
+# X-API-Key: dev-write-key
+# Idempotency-Key: demo-1
+# Content-Type: application/json
+#
+# {
+#   "workspace_id": "public",
+#   "service": "demo",
+#   "actor": "user:123",
+#   "action": "LOGIN",
+#   "resource": "session:abc",
+#   "metadata": { "ip": "127.0.0.1" }
+# }
+#
+# ### List events (public read)
+# GET http://localhost:8080/api/traceforge/v1/events?service=demo
+# X-Public-Read-Key: dev-public-read-key
