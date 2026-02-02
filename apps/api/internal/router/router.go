@@ -12,6 +12,7 @@ const basePath = "/api/traceforge/v1"
 
 func Mount(r chi.Router) {
 	store := handler.NewEventStore()
+	writeLimiter := handler.NewWriteRateLimiter()
 
 	r.Route(basePath, func(r chi.Router) {
 		r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
@@ -20,7 +21,7 @@ func Mount(r chi.Router) {
 			w.Write([]byte(`{"ok":true,"service":"traceforge","version":"v1"}`))
 		})
 
-		r.Post("/events", handler.HandleCreateEvent(store))
+		r.With(writeLimiter.Middleware).Post("/events", handler.HandleCreateEvent(store))
 
 		// TODO (Milestone 2+):
 		// GET /events (read, public read key + strict rate limit)
