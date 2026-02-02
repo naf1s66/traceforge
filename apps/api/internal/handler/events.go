@@ -115,14 +115,15 @@ func HandleCreateEvent(store *EventStore) http.HandlerFunc {
 		}
 
 		event := model.Event{
-			ID:          eventID,
-			WorkspaceID: workspaceID,
-			Service:     strings.TrimSpace(req.Service),
-			Actor:       strings.TrimSpace(req.Actor),
-			Action:      strings.TrimSpace(req.Action),
-			Resource:    strings.TrimSpace(req.Resource),
-			Metadata:    metadata,
-			CreatedAt:   time.Now().UTC(),
+			ID:             eventID,
+			WorkspaceID:    workspaceID,
+			IdempotencyKey: idempotencyKey,
+			Service:        strings.TrimSpace(req.Service),
+			Actor:          strings.TrimSpace(req.Actor),
+			Action:         strings.TrimSpace(req.Action),
+			Resource:       strings.TrimSpace(req.Resource),
+			Metadata:       metadata,
+			CreatedAt:      time.Now().UTC(),
 		}
 
 		store.addWithIdempotency(workspaceID, idempotencyKey, event)
