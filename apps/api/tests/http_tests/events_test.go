@@ -102,6 +102,7 @@ func TestCreateEventSuccess(t *testing.T) {
 	require.NoError(t, json.NewDecoder(rr.Body).Decode(&resp))
 	require.NotEmpty(t, resp["id"])
 	require.Equal(t, "public", resp["workspace_id"])
+	require.Equal(t, "demo-1", resp["idempotency_key"])
 	require.Equal(t, "demo", resp["service"])
 	require.Equal(t, "user:1", resp["actor"])
 	require.Equal(t, "LOGIN", resp["action"])
@@ -143,4 +144,5 @@ func TestCreateEventIdempotency(t *testing.T) {
 	require.NoError(t, json.NewDecoder(second.Body).Decode(&secondResp))
 	require.Equal(t, firstResp["id"], secondResp["id"])
 	require.Equal(t, firstResp["created_at"], secondResp["created_at"])
+	require.Equal(t, firstResp["idempotency_key"], secondResp["idempotency_key"])
 }
