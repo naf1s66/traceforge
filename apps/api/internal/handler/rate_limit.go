@@ -39,6 +39,11 @@ func (l *writeRateLimiter) Middleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+		expectedKey, err := writeAPIKey()
+		if err != nil || apiKey != expectedKey {
+			next.ServeHTTP(w, r)
+			return
+		}
 		if !l.allow(apiKey) {
 			writeJSONError(
 				w,
